@@ -32,8 +32,8 @@ namespace gyronimo {
 // order to avoid construction without self allocation.
 template<typename Range> requires 
   std::copy_constructible<Range> &&
-  std::ranges::sized_range<Range> &&
-  std::ranges::random_access_range<Range>
+  ranges::sized_range<Range> &&
+  ranges::random_access_range<Range>
 inline
 Range transpose(const Range& original, size_t nfast) {
   if (std::size(original)%nfast) error(

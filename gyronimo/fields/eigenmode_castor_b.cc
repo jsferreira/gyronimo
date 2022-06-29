@@ -35,8 +35,8 @@ eigenmode_castor_b::eigenmode_castor_b(
       tildeA1_(p->s(), p->a1_real(), p->a1_imag(), p->m(), ifactory),
       tildeA2_(p->s(), p->a2_real(), p->a2_imag(), p->m(), ifactory),
       tildeA3_(p->s(), p->a3_real(), p->a3_imag(), p->m(), ifactory) {
-  norm_factor_ = 1.0/std::ranges::max(
-      parser_->s() | std::views::transform(
+  norm_factor_ = 1.0/ranges::max(
+      parser_->s() | ranges::views::transform(
           [this](double s){return this->magnitude({s, 0, 0}, 0);}));
 }
 

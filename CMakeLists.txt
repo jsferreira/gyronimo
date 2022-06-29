@@ -101,6 +101,12 @@ find_package(GSL REQUIRED)
 find_package(Boost 1.73.0 REQUIRED)
   include_directories(${Boost_INCLUDE_DIRS})
 
+# add alternative support for ranges 
+add_library(range_v3 INTERFACE IMPORTED)
+# set_target_properties(range_v3 PROPERTIES 
+#     INTERFACE_INCLUDE_DIRECTORIES <path_to_range_v3>/include)
+# target_link_libraries(your_target PUBLIC range_v3)
+
 # add libraries needed to provide openMP support if required
 if(SUPPORT_OPENMP)
   message(STATUS "Configuring OpenMP support (SUPPORT_OPENMP=ON)")
@@ -147,14 +153,14 @@ endif()
 add_library(gyronimo SHARED ${gyronimo_sources})
 set_target_properties(gyronimo PROPERTIES VERSION ${PROJECT_VERSION})
 if(NOT SUPPORT_VMEC)
-  target_include_directories(gyronimo PUBLIC ${PROJECT_SOURCE_DIR})
-  target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs})
+  target_include_directories(gyronimo PUBLIC ${PROJECT_SOURCE_DIR} range_v3)
+  target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs} range_v3)
 else()
   # target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs} PkgConfig::netcdf-cxx4)
   target_include_directories(gyronimo
-      PUBLIC ${PROJECT_SOURCE_DIR} ${netcdf_cxx_flags})
+      PUBLIC ${PROJECT_SOURCE_DIR} ${netcdf_cxx_flags} range_v3)
   target_link_libraries(gyronimo
-      PUBLIC ${gyronimo_depending_libs} ${netcdf_cxx_libs})
+      PUBLIC ${gyronimo_depending_libs} ${netcdf_cxx_libs} range_v3)
 endif()
 
 # builds the apps:

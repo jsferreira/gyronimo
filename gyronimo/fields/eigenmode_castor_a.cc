@@ -17,7 +17,8 @@
 
 // @eigenmode_castor_a.cc, this file is part of ::gyronimo::
 
-#include <ranges>
+// #include <ranges>
+#include <range/v3/all.hpp>
 #include <gyronimo/fields/eigenmode_castor_a.hh>
 
 namespace gyronimo{
@@ -32,8 +33,8 @@ eigenmode_castor_a::eigenmode_castor_a(
       tildeA1_(p->s(), p->a1_real(), p->a1_imag(), p->m(), ifactory),
       tildeA2_(p->s(), p->a2_real(), p->a2_imag(), p->m(), ifactory),
       tildeA3_(p->s(), p->a3_real(), p->a3_imag(), p->m(), ifactory) {
-  norm_factor_ = 1.0/std::ranges::max(
-      parser_->s() | std::views::transform(
+  norm_factor_ = 1.0/ranges::max(
+      parser_->s() | ranges::views::transform(
           [this](double s){return this->magnitude({s, 0, 0}, 0);}));
 }
 IR3 eigenmode_castor_a::covariant(const IR3& position, double time) const {

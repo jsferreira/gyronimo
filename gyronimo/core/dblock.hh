@@ -20,7 +20,10 @@
 #ifndef GYRONIMO_DBLOCK
 #define GYRONIMO_DBLOCK
 
-#include <ranges>
+// #include <ranges>
+#include <range/v3/all.hpp>
+
+//#include <boost/range/algorithm.hpp>
 
 namespace gyronimo {
 
@@ -54,17 +57,17 @@ class dblock {
 
 //! Templated adapter for any contiguous STL range of doubles.
 template<typename Range> requires
-  std::ranges::contiguous_range<Range> &&
-  std::same_as<std::ranges::range_value_t<Range>, double>
+  ranges::contiguous_range<Range> &&
+  std::same_as<ranges::range_value_t<Range>, double>
 class dblock_adapter : public dblock {
  public:
   dblock_adapter(const Range& obj) : obj_ref_(obj) {};
   dblock_adapter(Range&& temp_obj)
       : moved_in_obj_(temp_obj), obj_ref_(moved_in_obj_) {};
   virtual const double* begin() const override {
-      return std::ranges::data(obj_ref_);};
+      return ranges::data(obj_ref_);};
   virtual const double* end() const override {
-      return std::ranges::data(obj_ref_) + std::ranges::size(obj_ref_);};
+      return ranges::data(obj_ref_) + ranges::size(obj_ref_);};
  private:
   const Range& obj_ref_;
   Range moved_in_obj_;
