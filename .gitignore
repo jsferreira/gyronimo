@@ -1,8 +1,12 @@
 # self evident, these ones...
 *.[doax]
 
+# temporary build folders:
+build*
+
 # vim temporary files:
 *.swp
+*~
 
 # Visual Studio Code temporary files:
 .vscode
