@@ -29,7 +29,7 @@ class odeint_adapter {
  public:
   odeint_adapter(const F* g) : p_(g) {};
   void operator()(
-      const F::state& x, F::state& dxdt, double t) const {dxdt = (*p_)(x, t);};
+    const typename F::state& x, typename F::state& dxdt, double t) const {dxdt = (*p_)(x, t);};
  private:
   const F* p_;
 };
