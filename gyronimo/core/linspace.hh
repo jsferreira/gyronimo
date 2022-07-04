@@ -42,7 +42,7 @@ Container linspace(
   Container samples(number);
   double delta = (end - start)/(number - 1);
   ranges::transform(
-      ranges::views::iota(0u, number), std::ranges::begin(samples),
+      ranges::views::iota(0u, number), ranges::begin(samples),
       [start, delta](size_t i) {return start + i*delta;});
   return samples;
 }

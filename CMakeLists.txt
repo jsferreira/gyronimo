@@ -84,7 +84,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     add_compile_options(-Og -ggdb3)
   endif()
   if(CMAKE_BUILD_TYPE MATCHES "Release")
-    add_compile_options(-march=native)
+    add_compile_options(-march=native -Ofast)
   endif()
 endif()
 
@@ -100,12 +100,9 @@ find_package(GSL REQUIRED)
   set(gyronimo_depending_libs ${gyronimo_depending_libs} ${GSL_LIBRARIES})
 find_package(Boost 1.73.0 REQUIRED)
   include_directories(${Boost_INCLUDE_DIRS})
+# add range-v3 for alternative ranges support
+find_package(range-v3 REQUIRED)
 
-# add alternative support for ranges 
-add_library(range_v3 INTERFACE IMPORTED)
-# set_target_properties(range_v3 PROPERTIES 
-#     INTERFACE_INCLUDE_DIRECTORIES <path_to_range_v3>/include)
-# target_link_libraries(your_target PUBLIC range_v3)
 
 # add libraries needed to provide openMP support if required
 if(SUPPORT_OPENMP)
@@ -153,14 +150,14 @@ endif()
 add_library(gyronimo SHARED ${gyronimo_sources})
 set_target_properties(gyronimo PROPERTIES VERSION ${PROJECT_VERSION})
 if(NOT SUPPORT_VMEC)
-  target_include_directories(gyronimo PUBLIC ${PROJECT_SOURCE_DIR} range_v3)
-  target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs} range_v3)
+  target_include_directories(gyronimo PUBLIC ${PROJECT_SOURCE_DIR})
+  target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs})
 else()
   # target_link_libraries(gyronimo PUBLIC ${gyronimo_depending_libs} PkgConfig::netcdf-cxx4)
   target_include_directories(gyronimo
-      PUBLIC ${PROJECT_SOURCE_DIR} ${netcdf_cxx_flags} range_v3)
+      PUBLIC ${PROJECT_SOURCE_DIR} ${netcdf_cxx_flags})
   target_link_libraries(gyronimo
-      PUBLIC ${gyronimo_depending_libs} ${netcdf_cxx_libs} range_v3)
+      PUBLIC ${gyronimo_depending_libs} ${netcdf_cxx_libs})
 endif()
 
 # builds the apps:

@@ -20,7 +20,8 @@
 #ifndef GYRONIMO_TRANSPOSE
 #define GYRONIMO_TRANSPOSE
 
-#include <ranges>
+//#include <ranges>
+#include <range/v3/all.hpp>
 #include <vector>
 #include <gyronimo/core/error.hh>
 #include <gyronimo/core/dblock.hh>
