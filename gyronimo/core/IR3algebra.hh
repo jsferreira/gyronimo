@@ -1,6 +1,6 @@
 // ::gyronimo:: - gyromotion for the people, by the people -
 // An object-oriented library for gyromotion applications in plasma physics.
-// Copyright (C) 2021 Paulo Rodrigues.
+// Copyright (C) 2021-2022 Paulo Rodrigues.
 
 // ::gyronimo:: is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ namespace gyronimo {
 */
 class IR3 : public  std::array<double, 3> {
  public:
-  enum index:size_t {u = 0, v = 1, w = 2};
+  enum index {u = 0, v = 1, w = 2};
 
   IR3(const std::initializer_list<double>& list)
       : std::array<double, 3>::array() {
@@ -99,7 +99,7 @@ class IR3 : public  std::array<double, 3> {
 */
 class dIR3 {
  public:
-  enum index : size_t {
+  enum index {
     uu = 0, uv = 1, uw = 2, vu = 3, vv = 4, vw = 5, wu = 6, wv = 7, ww = 8};
 
   double& operator[](index i) {return data_[i];}
@@ -112,6 +112,9 @@ class dIR3 {
 
   std::array<double, 9> data_;
 };
+
+//! Inverse of a dIR3 matrix.
+dIR3 inverse(const dIR3& m);
 
 //! Binary operation between two arbitrary types with `operator[i]`.
 /*!
