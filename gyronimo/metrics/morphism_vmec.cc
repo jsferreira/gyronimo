@@ -93,15 +93,31 @@ IR3 morphism_vmec::inverse(const IR3& X) const {
 }
 dIR3 morphism_vmec::del(const IR3& q) const {
   double s = q[IR3::u], zeta = q[IR3::v], theta = q[IR3::w];
-
-  // double R = (*R_)(s, chi),
-  //     Ru = (*R_).partial_u(s, chi), Rv = (*R_).partial_v(s, chi);
-
-  // double cos = std::cos(zeta), sin = std::sin(zeta);
-  // return {Ru*cos, Rv*cos, -R*sin, -Ru*sin, -Rv*sin, -R*cos,
-  //     (*z_).partial_u(s, chi), (*z_).partial_v(s, chi), 0.0};
-  return {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
-          0.0, 0.0, 0.0};
+  double R = 0.0, Z = 0.0;
+  double dR_ds = 0.0, dR_dtheta = 0.0, dR_dzeta = 0.0;
+  double dZ_ds = 0.0, dZ_dtheta = 0.0, dZ_dzeta = 0.0;
+  #pragma omp parallel for reduction(+: R, dR_ds, dR_dtheta, dR_dzeta, d2R_ds2, d2R_dsdtheta, d2R_dsdzeta, d2R_dtheta2, d2R_dthetadzeta, d2R_dzeta2, Z, dZ_ds ,dZ_dtheta, dZ_dzeta, d2Z_ds2, d2Z_dsdtheta, d2Z_dsdzeta, d2Z_dtheta2, d2Z_dthetadzeta, d2Z_dzeta2)
+  for (size_t i = 0; i<xm_.size(); i++) {  
+    double m = xm_[i]; double n = xn_[i];
+    double cosmn = std::cos( m*theta - n*zeta );
+    double sinmn = std::sin( m*theta - n*zeta );
+    double rmnc_i = (*Rmnc_[i])(s); 
+    double zmns_i = (*Zmns_[i])(s);
+    double d_rmnc_i = (*Rmnc_[i]).derivative(s); 
+    double d_zmns_i = (*Zmns_[i]).derivative(s); 
+    // assuming for now that vmec equilibrium has stellarator symmetry.
+    R += rmnc_i * cosmn; Z += zmns_i * sinmn;
+    dR_ds += d_rmnc_i * cosmn; 
+    dR_dtheta -= m * rmnc_i * sinmn; 
+    dR_dzeta += n * rmnc_i * sinmn;
+    dZ_ds += d_zmns_i * sinmn; 
+    dZ_dtheta += m * zmns_i * cosmn; 
+    dZ_dzeta -= n * zmns_i * cosmn; 
+}
+  double cos = std::cos(zeta), sin = std::sin(zeta);
+  return {dR_ds * cos, dR_dzeta * cos - R*sin, dR_dtheta * cos, 
+          dR_ds * sin, dR_dzeta * sin + R*cos, dR_dtheta * sin,
+          dZ_ds, dZ_dzeta, dZ_dtheta};
 }
 std::tuple<double, double> morphism_vmec::reflection_past_axis(
     double s, double theta) {
