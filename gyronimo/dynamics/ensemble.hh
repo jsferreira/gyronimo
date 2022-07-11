@@ -20,7 +20,9 @@
 #ifndef GYRONIMO_ENSEMBLE
 #define GYRONIMO_ENSEMBLE
 
-#include <ranges>
+// #include <ranges>
+#include <range/v3/all.hpp>
+
 #include <execution>
 
 namespace gyronimo {
@@ -37,7 +39,7 @@ namespace gyronimo {
 template<typename GyronRange>
 class ensemble {
  public:
-  typedef typename std::ranges::range_value_t<GyronRange> gyron_t;
+  typedef typename ranges::range_value_t<GyronRange> gyron_t;
   typedef typename gyron_t::state gyron_state_t;
   ensemble(const GyronRange& gyron_ensemble)
     : gyron_ensemble_(gyron_ensemble) {};

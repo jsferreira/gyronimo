@@ -65,7 +65,7 @@ template<SizedContiguousRange UserArgs>
 UserArgs multiroot::operator()(
     user_function_t<UserArgs>& f, const UserArgs& guess) const {
   auto [solver, guess_gsl, struct_f_gsl] = allocate_gsl_objects(f, guess);
-  for(auto iteration : std::views::iota(1u, max_iterations_)) {
+  for(auto iteration : ranges::views::iota(1u, max_iterations_)) {
     int flag = gsl_multiroot_fsolver_iterate(solver);
     switch(flag) {
       case GSL_ENOPROG: error(__func__, __FILE__, __LINE__,
@@ -92,7 +92,7 @@ int multiroot::translation_function(
   UserArgs args = generate_sized<UserArgs>(args_gsl->size);
   std::copy(args_gsl->data, args_gsl->data + args_gsl->size, args.begin());
   UserArgs eval = (*static_cast<user_function_t<UserArgs>*>(f_pointer))(args);
-  std::ranges::copy(eval, eval_gsl->data);
+  ranges::copy(eval, eval_gsl->data);
   return GSL_SUCCESS;
 }
 
@@ -107,7 +107,7 @@ auto multiroot::allocate_gsl_objects(
       new gsl_multiroot_function {&translation_function<UserArgs>, n, &f};
   if(!solver || !guess_gsl || !struct_f_gsl) error(
       __func__, __FILE__, __LINE__, "gsl object allocation failed.", 1);
-  std::ranges::copy(guess, guess_gsl->data);
+  ranges::copy(guess, guess_gsl->data);
   gsl_multiroot_fsolver_set(solver, struct_f_gsl, guess_gsl);
   return std::tuple<
       gsl_multiroot_fsolver*, gsl_vector*, gsl_multiroot_function*

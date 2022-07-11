@@ -20,14 +20,16 @@
 #ifndef GYRONIMO_GENERATORS
 #define GYRONIMO_GENERATORS
 
-#include <ranges>
+// #include <ranges>
+#include <range/v3/all.hpp>
+
 
 namespace gyronimo {
 
 template<typename Container>
 concept SizedContiguousRange = 
-  std::ranges::sized_range<Container> &&
-  std::ranges::contiguous_range<Container>;
+  ranges::sized_range<Container> &&
+  ranges::contiguous_range<Container>;
 
 template<SizedContiguousRange Container> requires
   std::constructible_from<Container, size_t>
