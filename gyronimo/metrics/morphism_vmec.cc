@@ -64,12 +64,12 @@ IR3 morphism_vmec::operator()(const IR3& q) const {
     R += (*Rmnc_[i])(s) * cosmn; 
     z += (*Zmns_[i])(s) * sinmn;
   };
-  return {R*std::cos(zeta), -R*std::sin(zeta), z};
+  return {R*std::cos(zeta), R*std::sin(zeta), z};
 }
 IR3 morphism_vmec::inverse(const IR3& X) const {
   typedef std::array<double, 2> IR2;
   double x = X[IR3::u], y = X[IR3::v], z = X[IR3::w];
-  double R = std::sqrt(x*x + y*y); double zeta = std::atan2(-y, x);
+  double R = std::sqrt(x*x + y*y); double zeta = std::atan2(y, x);
   std::function<IR2(const IR2&)> zero_function =
       [&](const IR2& args) {
         auto [s, theta] = reflection_past_axis(args[0], args[1]);

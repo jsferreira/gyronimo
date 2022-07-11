@@ -56,7 +56,7 @@ void print_help() {
   std::cout << "  -charge=qqq    Particle charge (in q_proton, default 1).\n";
   std::cout << "  -s=sss         s = PSIphi/PSIphi_bnd value (normalized, 0 to 1, default 0.5).\n";
   std::cout << "  -theta=ooo     theta = VMEC poloidal angle (normalized, 0 to 1, in 2Pi*rad, default 0.0).\n";
-  std::cout << "  -phi=ppp       phi = VMEC/cylindridal toroidal angle (normalized, 0 to 1, in 2Pi*rad, default 0.0).\n";
+  std::cout << "  -phi=ppp       phi = VMEC/cylindrical toroidal angle (normalized, 0 to 1, in 2Pi*rad, default 0.0).\n";
   std::cout << "  -energy=eee    Energy value (in eV, default 1).\n";
   std::cout << "  -lambda=lll    Lambda value, signed as Vpp (default +1).\n";
   std::cout << "  -tfinal=ttt    Time limit (in R0/Valfven, default 1).\n";
