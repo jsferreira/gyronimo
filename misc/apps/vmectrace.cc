@@ -49,11 +49,12 @@ void print_help() {
   std::cout << "  -lref=val      Reference length (in si, default 1).\n";
   std::cout << "  -vref=val      Reference velocity (in si, default 1).\n";
   std::cout << "  -mass=val      Particle mass (in m_proton, default 1).\n";
-  std::cout << "  -flux=val      Initial toroidal flux (vmec, default 0.5).\n";
+  std::cout << "  -flux=val      Initial normalised toroidal flux (vmec, default 0.5).\n";
   std::cout << "  -zeta=val      Initial zeta (vmec in rad, default 0).\n";
   std::cout << "  -theta=val     Initial theta (vmec in rad, default 0).\n";
   std::cout << "  -energy=val    Energy value (in eV, default 1).\n";
-  std::cout << "  -lambda=val    Lambda value, signed as v_par (default 1).\n";
+  std::cout << "  -lambda=val    Lambda value, signed as v_par (default 0).\n";
+  std::cout << "  -pitch=val     Cosine pitch angle, signed as v_par (default, use lambda).\n";
   std::cout << "  -tfinal=val    Time limit (in lref/vref, default 1).\n";
   std::cout << "  -charge=val    Particle charge (in q_proton, default 1).\n";
   std::cout << "  -nsamples=val  Number of orbit samples (default 512).\n";
@@ -79,7 +80,8 @@ class orbit_observer {
         << q[IR3::w] << " "
         << gc_pointer_->energy_perpendicular(s, t) << " "
         << gc_pointer_->energy_parallel(s) << " " 
-        << x << " " << y << " " << z << "\n";
+        << x << " " << y << " " << z << " "
+        << R << "\n";
   };
  private:
   const IR3field_c1* eq_pointer_;
@@ -108,12 +110,24 @@ int main(int argc, char* argv[]) {
   double tfinal; command_line("tfinal", 1.0) >> tfinal;
   double charge; command_line("charge", 1.0) >> charge;
   double energy; command_line("energy", 1.0) >> energy;
-  double lambda; command_line("lambda", 1.0) >> lambda;
-  double vpp_sign = std::copysign(1.0, lambda);  // lambda carries vpp sign.
-  lambda = std::abs(lambda);  // once vpp sign is stored, lambda turns unsigned.
+  double lambda; command_line("lambda", 0.0) >> lambda;
+  double pitch; command_line("pitch", 10.0) >> pitch;
 
   double energy_ref = 0.5*codata::m_proton*mass*vref*vref;
   double energy_si = energy*codata::e;
+
+  double vpp_sign;
+  if (pitch >= -1.0 && pitch <= 1.0) {
+    vpp_sign = std::copysign(1.0, pitch);  // pitch carries vpp sign.
+    lambda = (1.0 - pitch*pitch) * std::abs(1.0/(&veq)->magnitude({flux, zeta, theta}, 0.0));
+    std::cout << "JOF >>> pitch: " << pitch << ", lambda: " << lambda << ", B0: " << veq.B_0() << ", B: " << veq.magnitude({flux, zeta, theta}, 0.0) << ", B(vmec): " << veq.magnitude_vmec({flux, zeta, theta}, 0.0) << std::endl;
+  }
+  else {
+    vpp_sign = std::copysign(1.0, lambda);  // lambda carries vpp sign.
+    lambda = std::abs(lambda);  // once vpp sign is stored, lambda turns unsigned.
+  };
+
+
   guiding_centre gc(lref, vref, charge/mass, lambda*energy_si/energy_ref, &veq);
   guiding_centre::state initial_state = gc.generate_state(
       {flux, zeta, theta}, energy_si/energy_ref,
@@ -129,7 +143,7 @@ int main(int argc, char* argv[]) {
           << " B_axis: " << veq.m_factor() << " [T]"
               << " mu_tilde: " << gc.mu_tilde() << "\n";
   std::cout <<
-      "# vars: t flux zeta theta E_perp/E_ref E_parallel/E_ref x y z\n";
+      "# vars: t flux zeta theta E_perp/E_ref E_parallel/E_ref x y z R\n";
 
 // integrates for t in [0,tfinal], with dt=tfinal/nsamples, using RK4.
   std::cout.precision(16);

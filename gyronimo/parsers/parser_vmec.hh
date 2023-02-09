@@ -34,7 +34,7 @@ class parser_vmec {
   typedef std::valarray<double> narray_type;
   parser_vmec(const std::string& filename);
   ~parser_vmec() {};
-  bool is_axisymmetric() const {return is_axisymmetric_;};
+  bool is_asymmetric() const {return is_asymmetric_;};
   size_t version()       const {return version_;};
   size_t nfp()           const {return nfp_;};
   size_t ns()            const {return ns_;};
@@ -114,7 +114,7 @@ class parser_vmec {
   double beta_axis_b;
 
  private:
-  bool is_axisymmetric_;
+  bool is_asymmetric_;
   size_t version_;
   size_t nfp_, ns_;
   size_t nradius_;

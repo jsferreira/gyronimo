@@ -20,6 +20,7 @@
 #ifndef GYRONIMO_BICUBIC_GSL
 #define GYRONIMO_BICUBIC_GSL
 
+#include <algorithm>
 #include <gsl/gsl_spline2d.h>
 #include <gyronimo/interpolators/interpolator2d.hh>
 

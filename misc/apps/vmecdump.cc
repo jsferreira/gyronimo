@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 void print_info(const gyronimo::parser_vmec& vmec) {
-  std::cout << "axisymmetric: " << (vmec.is_axisymmetric() ? "yes\n" : "no\n");
+  std::cout << "  asymmetric: " << (vmec.is_asymmetric() ? "yes\n" : "no\n");
   std::cout << "fieldperiods: " << vmec.nfp() << "\n";
   std::cout << "     nradial: " << vmec.ns() << "\n";
   std::cout << "        ntor: " << vmec.ntor() << "\n";
