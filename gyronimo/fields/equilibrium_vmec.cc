@@ -55,46 +55,47 @@ equilibrium_vmec::~equilibrium_vmec() {
 }
 IR3 equilibrium_vmec::contravariant(const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
   double B_theta = 0.0, B_zeta = 0.0;
-  #pragma omp parallel for reduction(+: B_zeta, B_theta)
+  #pragma omp parallel for reduction(+: B_theta,  B_zeta)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
-    double cosmn = std::cos( m*theta - n*zeta );
+    double cosmn = std::cos( m*theta + n*zeta );
+    B_theta -= (*bsupumnc_[i])(s) * cosmn; 
     B_zeta += (*bsupvmnc_[i])(s) * cosmn;
-    B_theta += (*bsupumnc_[i])(s) * cosmn; 
   };
-  return {0.0,  B_zeta, B_theta};
+  return {0.0, B_theta, B_zeta};
 }
 dIR3 equilibrium_vmec::del_contravariant(
     const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
   double B_theta = 0.0, B_zeta = 0.0;
   double dB_theta_ds = 0.0, dB_theta_dtheta = 0.0, dB_theta_dzeta = 0.0;
   double dB_zeta_ds = 0.0, dB_zeta_dtheta = 0.0, dB_zeta_dzeta = 0.0;
-  #pragma omp parallel for reduction(+: B_zeta, B_theta, dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta, dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta)
+  #pragma omp parallel for reduction(+: B_theta, B_zeta, dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta, dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
-    double cosmn = std::cos( m*theta - n*zeta );
-    double sinmn = std::sin( m*theta - n*zeta );
-    double bsupumnc_i = (*bsupumnc_[i])(s);
-    double bsupvmnc_i = (*bsupvmnc_[i])(s);
+    double cosmn = std::cos( m*theta + n*zeta );
+    double sinmn = std::sin( m*theta + n*zeta );
+    // note that theta_g = - theta_vmec -> B_theta_g = - B_theta_vmec 
+    double bsupumnc_i = - (*bsupumnc_[i])(s);
+    double bsupvmnc_i =   (*bsupvmnc_[i])(s);
     B_theta += bsupumnc_i * cosmn; 
     B_zeta += bsupvmnc_i * cosmn;
-    dB_theta_ds += (*bsupumnc_[i]).derivative(s) * cosmn;
-    dB_theta_dtheta -= m * bsupumnc_i * sinmn;
-    dB_theta_dzeta += n * bsupumnc_i * sinmn;
+    dB_theta_ds += - (*bsupumnc_[i]).derivative(s) * cosmn;
+    dB_theta_dtheta -= m * bsupumnc_i * sinmn;  
+    dB_theta_dzeta -= n * bsupumnc_i * sinmn; 
     dB_zeta_ds += (*bsupvmnc_[i]).derivative(s) * cosmn;
     dB_zeta_dtheta -= m * bsupvmnc_i * sinmn;
-    dB_zeta_dzeta += n * bsupvmnc_i * sinmn;
+    dB_zeta_dzeta -= n * bsupvmnc_i * sinmn;
   };
   return {
       0.0, 0.0, 0.0, 
-	    dB_zeta_ds, dB_zeta_dzeta, dB_zeta_dtheta,
-      dB_theta_ds, dB_theta_dzeta, dB_theta_dtheta
+      dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta,
+      dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta
   };
 }
 //@todo we can actually override the methods to calculate the covariant components of the field
@@ -102,12 +103,12 @@ dIR3 equilibrium_vmec::del_contravariant(
 double equilibrium_vmec::magnitude_vmec(
     const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
   double Bnorm = 0.0;
   #pragma omp parallel for reduction(+: Bnorm)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
-    Bnorm += (*bmnc_[i])(s) * std::cos( xm_nyq_[i] * theta - xn_nyq_[i] *zeta );
+    Bnorm += (*bmnc_[i])(s) * std::cos( xm_nyq_[i] * theta + xn_nyq_[i] * zeta );
   };
   return Bnorm;
 }

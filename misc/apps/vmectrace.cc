@@ -50,8 +50,8 @@ void print_help() {
   std::cout << "  -vref=val      Reference velocity (in si, default 1).\n";
   std::cout << "  -mass=val      Particle mass (in m_proton, default 1).\n";
   std::cout << "  -flux=val      Initial normalised toroidal flux (vmec, default 0.5).\n";
-  std::cout << "  -zeta=val      Initial zeta (vmec in rad, default 0).\n";
   std::cout << "  -theta=val     Initial theta (vmec in rad, default 0).\n";
+  std::cout << "  -zeta=val      Initial zeta (vmec in rad, default 0).\n";
   std::cout << "  -energy=val    Energy value (in eV, default 1).\n";
   std::cout << "  -lambda=val    Lambda value, signed as v_par (default 0).\n";
   std::cout << "  -pitch=val     Cosine pitch angle, signed as v_par (default, use lambda).\n";
@@ -102,11 +102,11 @@ int main(int argc, char* argv[]) {
 
 // Reads parameters from the command line:
   double flux; command_line("flux", 0.5) >> flux;
+  double theta; command_line("theta", 0.0) >> theta;
   double zeta; command_line("zeta", 0.0) >> zeta;
   double mass; command_line("mass", 1.0) >> mass;
   double lref; command_line("lref", 1.0) >> lref;
   double vref; command_line("vref", 1.0) >> vref;
-  double theta; command_line("theta", 0.0) >> theta;
   double tfinal; command_line("tfinal", 1.0) >> tfinal;
   double charge; command_line("charge", 1.0) >> charge;
   double energy; command_line("energy", 1.0) >> energy;
@@ -119,8 +119,8 @@ int main(int argc, char* argv[]) {
   double vpp_sign;
   if (pitch >= -1.0 && pitch <= 1.0) {
     vpp_sign = std::copysign(1.0, pitch);  // pitch carries vpp sign.
-    lambda = (1.0 - pitch*pitch) * std::abs(1.0/(&veq)->magnitude({flux, zeta, theta}, 0.0));
-    std::cout << "JOF >>> pitch: " << pitch << ", lambda: " << lambda << ", B0: " << veq.B_0() << ", B: " << veq.magnitude({flux, zeta, theta}, 0.0) << ", B(vmec): " << veq.magnitude_vmec({flux, zeta, theta}, 0.0) << std::endl;
+    lambda = (1.0 - pitch*pitch) * std::abs(1.0/(&veq)->magnitude({flux, theta, zeta}, 0.0));
+    std::cout << "JOF >>> pitch: " << pitch << ", lambda: " << lambda << ", B0: " << veq.B_0() << ", B: " << veq.magnitude({flux, theta, zeta}, 0.0) << ", B(vmec): " << veq.magnitude_vmec({flux, theta, zeta}, 0.0) << std::endl;
   }
   else {
     vpp_sign = std::copysign(1.0, lambda);  // lambda carries vpp sign.
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
 
   guiding_centre gc(lref, vref, charge/mass, lambda*energy_si/energy_ref, &veq);
   guiding_centre::state initial_state = gc.generate_state(
-      {flux, zeta, theta}, energy_si/energy_ref,
+      {flux, theta, zeta}, energy_si/energy_ref,
           (vpp_sign > 0 ?  guiding_centre::plus : guiding_centre::minus));
 
 // Prints output header:
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
           << " B_axis: " << veq.m_factor() << " [T]"
               << " mu_tilde: " << gc.mu_tilde() << "\n";
   std::cout <<
-      "# vars: t flux zeta theta E_perp/E_ref E_parallel/E_ref x y z R\n";
+      "# vars: t flux theta zeta E_perp/E_ref E_parallel/E_ref x y z R\n";
 
 // integrates for t in [0,tfinal], with dt=tfinal/nsamples, using RK4.
   std::cout.precision(16);

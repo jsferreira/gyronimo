@@ -9,3 +9,6 @@
 
 # Useless macos stuff:
 .DS_Store
+
+# build folders
+*build*
