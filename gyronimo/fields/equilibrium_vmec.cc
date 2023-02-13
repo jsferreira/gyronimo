@@ -38,7 +38,8 @@ equilibrium_vmec::equilibrium_vmec(
   #pragma omp parallel for
   for(size_t i=0; i<xm_nyq_.size(); i++) {
     std::slice s_cut (i, s_range.size(), xm_nyq_.size());
-    std::valarray<double> bsupumnc_i = (p->bsupumnc())[s_cut] / this->m_factor();
+    // note that theta_g = - theta_vmec -> B_theta_g = - B_theta_vmec 
+    std::valarray<double> bsupumnc_i = - (p->bsupumnc())[s_cut] / this->m_factor();
     bsupumnc_[i] = ifactory->interpolate_data( s_range, dblock_adapter(bsupumnc_i));
     std::valarray<double> bsupvmnc_i = (p->bsupvmnc())[s_cut] / this->m_factor();
     bsupvmnc_[i] = ifactory->interpolate_data( s_range, dblock_adapter(bsupvmnc_i));
@@ -62,7 +63,7 @@ IR3 equilibrium_vmec::contravariant(const IR3& position, double time) const {
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
     double cosmn = std::cos( m*theta + n*zeta );
-    B_theta -= (*bsupumnc_[i])(s) * cosmn; 
+    B_theta += (*bsupumnc_[i])(s) * cosmn; 
     B_zeta += (*bsupvmnc_[i])(s) * cosmn;
   };
   return {0.0, B_theta, B_zeta};
@@ -80,12 +81,11 @@ dIR3 equilibrium_vmec::del_contravariant(
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
     double cosmn = std::cos( m*theta + n*zeta );
     double sinmn = std::sin( m*theta + n*zeta );
-    // note that theta_g = - theta_vmec -> B_theta_g = - B_theta_vmec 
-    double bsupumnc_i = - (*bsupumnc_[i])(s);
-    double bsupvmnc_i =   (*bsupvmnc_[i])(s);
+    double bsupumnc_i = (*bsupumnc_[i])(s);
+    double bsupvmnc_i = (*bsupvmnc_[i])(s);
     B_theta += bsupumnc_i * cosmn; 
     B_zeta += bsupvmnc_i * cosmn;
-    dB_theta_ds += - (*bsupumnc_[i]).derivative(s) * cosmn;
+    dB_theta_ds += (*bsupumnc_[i]).derivative(s) * cosmn;
     dB_theta_dtheta -= m * bsupumnc_i * sinmn;  
     dB_theta_dzeta -= n * bsupumnc_i * sinmn; 
     dB_zeta_ds += (*bsupvmnc_[i]).derivative(s) * cosmn;

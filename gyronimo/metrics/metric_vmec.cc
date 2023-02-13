@@ -42,11 +42,13 @@ metric_vmec::metric_vmec(
       std::slice s_cut (i, s_range.size(), xm_.size());
       std::valarray<double> rmnc_i = (p->rmnc())[s_cut];
       Rmnc_[i] = ifactory->interpolate_data( s_range, dblock_adapter(rmnc_i));
-      std::valarray<double> zmnc_i = (p->zmns())[s_cut];
+      // note that theta_g = - theta_vmec -> Z_g = - Z_vmec 
+      std::valarray<double> zmnc_i = - (p->zmns())[s_cut];
       Zmns_[i] = ifactory->interpolate_data( s_range, dblock_adapter(zmnc_i));
       // note that gmnc is defined at half mesh
       std::slice s_h_cut (i+xm_nyq_.size(), s_half_range.size(), xm_nyq_.size());
-      std::valarray<double> gmnc_i = (p->gmnc())[s_h_cut];
+      // vmec in gyronimo is right-handed
+      std::valarray<double> gmnc_i = - (p->gmnc())[s_h_cut];
       gmnc_[i] = ifactory->interpolate_data( s_half_range, dblock_adapter(gmnc_i));
     };
 }
@@ -67,16 +69,15 @@ SM3 metric_vmec::operator()(const IR3& position) const {
     double m = xm_[i]; double n = xn_[i];
     double cosmn = std::cos( m*theta + n*zeta );
     double sinmn = std::sin( m*theta + n*zeta );
-    double rmnc_i =   (*Rmnc_[i])(s);
-    // note that theta_g = - theta_vmec -> Z_g = - Z_vmec 
-    double zmns_i = - (*Zmns_[i])(s);
+    double rmnc_i = (*Rmnc_[i])(s);
+    double zmns_i = (*Zmns_[i])(s);
     // assuming for now that vmec equilibrium has stellarator symmetry.
     R += rmnc_i * cosmn; 
     Z += zmns_i * sinmn;
     dR_ds += (*Rmnc_[i]).derivative(s) * cosmn; 
     dR_dtheta -= m * rmnc_i * sinmn; 
     dR_dzeta -= n * rmnc_i * sinmn;   //TODO this might be wrong actually 
-    dZ_ds += - (*Zmns_[i]).derivative(s) * sinmn; 
+    dZ_ds += (*Zmns_[i]).derivative(s) * sinmn; 
     dZ_dtheta += m * zmns_i * cosmn; 
     dZ_dzeta += n * zmns_i * cosmn;   //TODO this might be wrong actually 
   };
@@ -108,13 +109,12 @@ dSM3 metric_vmec::del(const IR3& position) const {
     double m = xm_[i]; double n = xn_[i];
     double cosmn = std::cos( m*theta + n*zeta );
     double sinmn = std::sin( m*theta + n*zeta );
-    // note that theta_g = - theta_vmec -> Z_g = - Z_vmec 
-    double rmnc_i =   (*Rmnc_[i])(s); 
-    double zmns_i = - (*Zmns_[i])(s);
+    double rmnc_i = (*Rmnc_[i])(s); 
+    double zmns_i = (*Zmns_[i])(s);
     double d_rmnc_i = (*Rmnc_[i]).derivative(s); 
-    double d_zmns_i = - (*Zmns_[i]).derivative(s); 
-    double d2_rmnc_i =  (*Rmnc_[i]).derivative2(s);
-    double d2_zmns_i = - (*Zmns_[i]).derivative2(s);
+    double d_zmns_i = (*Zmns_[i]).derivative(s); 
+    double d2_rmnc_i = (*Rmnc_[i]).derivative2(s);
+    double d2_zmns_i = (*Zmns_[i]).derivative2(s);
     // assuming for now that vmec equilibrium has stellarator symmetry.
     R += rmnc_i * cosmn; Z += zmns_i * sinmn;
     dR_ds += d_rmnc_i * cosmn; 
@@ -173,8 +173,8 @@ IR3 metric_vmec::transform2cylindrical(const IR3& position) const {
     #pragma omp parallel for reduction(+: R, Z)
     for (size_t i = 0; i<xm_.size(); i++) {
       double m = xm_[i]; double n = xn_[i];
-      R+=   (*Rmnc_[i])(u) * std::cos( m*v + n*w ); 
-      Z+= - (*Zmns_[i])(u) * std::sin( m*v + n*w );
+      R+= (*Rmnc_[i])(u) * std::cos( m*v + n*w ); 
+      Z+= (*Zmns_[i])(u) * std::sin( m*v + n*w );
     }
     return  {R, w, Z};
 }
@@ -189,8 +189,8 @@ double metric_vmec::jacobian_vmec(const IR3& position) const {
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     J += (*gmnc_[i])(s) * std::cos( xm_nyq_[i]*theta + xn_nyq_[i]*zeta );
   };
-  // left-handed VMEC coordinate system transformed to 
-  // right-handed (psi_tor_norm, theta_g, phi_g) coordinates  (COCOS11)
-  return -J;
+  // VMEC coordinate in gyronimo is right-handed 
+  // (psi_tor_norm, theta_g, phi_g) coordinates
+  return J;
 }
 } // end namespace gyronimo
