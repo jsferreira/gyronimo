@@ -83,12 +83,14 @@ class guiding_centre {
 
   guiding_centre(
       double Lref, double Vref, double qom, double mu,
-      const IR3field_c1* B, const IR3field* E = nullptr);
+      IR3field_c1* B, const IR3field* E = nullptr);
   ~guiding_centre() {};
 
   state operator()(const state& x, double t) const;
 
   double get_vpp(const state& s) const;
+  void nullify_mu();
+
   IR3 get_position(const state& s) const;
   double energy_parallel(const state& s) const;
   double energy_perpendicular(const state& s, double time) const;
@@ -109,10 +111,11 @@ class guiding_centre {
  private:
   const IR3field* electric_field_;
   const IR3field_c1* magnetic_field_;
-  const double qom_tilde_, mu_tilde_;
+  const double qom_tilde_;
   const double Lref_, Vref_, Tref_;
   const double Bfield_time_factor_, Efield_time_factor_;
   double iOref_tilde_, Eref_tilde_;
+  double mu_tilde_;
 };
 
 } // end namespace gyronimo.

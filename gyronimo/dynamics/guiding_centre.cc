@@ -34,7 +34,7 @@ namespace gyronimo {
 */
 guiding_centre::guiding_centre(
     double Lref, double Vref,
-    double qom, double mu, const IR3field_c1* B, const IR3field* E)
+    double qom, double mu, IR3field_c1* B, const IR3field* E)
     : qom_tilde_(qom), mu_tilde_(mu),
       electric_field_(E), magnetic_field_(B),
       Lref_(Lref), Vref_(Vref), Tref_(Lref/Vref),
@@ -87,6 +87,10 @@ guiding_centre::state guiding_centre::operator()(
 
 double guiding_centre::get_vpp(const state& s) const {
   return s[3];
+}
+
+void guiding_centre::nullify_mu() {
+  mu_tilde_ = 0.0;
 }
 
 IR3 guiding_centre::get_position(const state& s) const {

@@ -51,7 +51,6 @@ void print_help() {
   std::cout << "      -phi               - phi coordinate\n";
   std::cout << "      -Z                 - Z coordinate\n";
   std::cout << "      -jacobian          - jacobian of the metric\n";
-  std::cout << "      -jacobian_vmec     - jacobian of the metric (from vmec)\n";
   std::cout << "  -radius         Prints radial grid.\n";
   std::cout << "  -iota           Prints 'iota' profile.\n";
   std::cout << "  -q              Prints 'q' safety factor profile.\n";
@@ -60,7 +59,7 @@ void print_help() {
   std::exit(0);
 }
 
-enum Scalar { R_cyl, phi_cyl, Z_cyl, Bnorm, Bnorm_vmec, jacobian, jacobian_vmec };
+enum Scalar { R_cyl, phi_cyl, Z_cyl, Bnorm, Bnorm_vmec, jacobian};
 typedef std::valarray<double> narray_type;
 enum class Out_format {table, python};
 
@@ -98,7 +97,6 @@ int main(int argc, char* argv[]) {
     if (command_line["R"]) scalar = R_cyl;
     if (command_line["Z"]) scalar = Z_cyl;
     if (command_line["jacobian"]) scalar = jacobian;
-    if (command_line["jacobian_vmec"]) scalar = jacobian_vmec;
 
     print_surface(scalar, vmec, &ifactory, ntheta, nzeta);
     std::exit(0);
@@ -108,7 +106,7 @@ int main(int argc, char* argv[]) {
   Out_format print_format = ((command_line["python_format"]) ? Out_format::python : Out_format::table);
 
   std::cout << "\n# VMEC equilibrium (" << command_line[1] << ")" << ::std::endl;
-  std::cout << "# is axisymmetric?: " << (vmec.is_axisymmetric() ? "No" : "Yes") << std::endl;
+  std::cout << "# is asymmetric?: " << (vmec.is_asymmetric() ? "No" : "Yes") << std::endl;
   std::cout << "# radial grid size: " << vmec.ns() << std::endl;
   std::cout << "#       grid: rmin = " << vmec.rmin_surf() << ", rmax = " << vmec.rmax_surf() << std::endl;
   std::cout << "#         ns: " << vmec.ns() << ", ntor: " << vmec.ntor() << ", mpol: " << vmec.mpol() << std::endl;
@@ -203,7 +201,6 @@ void print_surface(const Scalar scalar,
           case R_cyl: std::cout << R ; break;
           case Z_cyl: std::cout << Z ; break;
           case jacobian: std::cout << g.jacobian(p); break;
-          case jacobian_vmec: std::cout << g.jacobian_vmec(p); break;
         }
         if(++j < nzeta) std::cout << " ";
       }
@@ -265,7 +262,6 @@ void debug(const gyronimo::parser_vmec& vmec ) {
   auto metric_at_x = g(x);
   auto dmetric_at_x = g.del(x);
   auto jacobian_at_x = g.jacobian(x);
-  auto J_at_x = g.jacobian_vmec(x);
   gyronimo::equilibrium_vmec veq(&g, &ifactory);
   auto B_at_x = veq.contravariant(x, 0.0);
   auto norm_b = veq.magnitude(x, 0.0);
@@ -304,7 +300,6 @@ void debug(const gyronimo::parser_vmec& vmec ) {
       << dmetric_at_x[gyronimo::dSM3::www] << "] "
       << std::endl;
   std::cout << "J = " << jacobian_at_x << std::endl;
-  std::cout << "J (vmec)= " << J_at_x << std::endl;
   std::cout << "B = ("
         << B_at_x[gyronimo::IR3::u] << ", "
         << B_at_x[gyronimo::IR3::v] << ", "

@@ -29,7 +29,7 @@ namespace gyronimo {
     try {
       netCDF::NcFile dataFile(filename, netCDF::NcFile::read);
       getData(dataFile, "version_", version_);
-      getData(dataFile, "lasym__logical__", is_axisymmetric_);
+      getData(dataFile, "lasym__logical__", is_asymmetric_);
       getData(dataFile, "ns", ns_);
       nradius_ = ns_; 
       radius_ = linspace<narray_type>(0.0, 1.0, ns_);

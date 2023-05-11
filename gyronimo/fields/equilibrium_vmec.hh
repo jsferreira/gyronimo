@@ -44,7 +44,7 @@ class equilibrium_vmec : public IR3field_c1{
   typedef std::valarray<double> narray_type;
   typedef std::vector<interpolator1d> spectralarray_type;
   equilibrium_vmec(
-      const metric_vmec *g, const interpolator1d_factory *ifactory);
+      const metric_vmec *g, const interpolator1d_factory *ifactory, const bool cached = true);
   virtual ~equilibrium_vmec() override;
 
   virtual IR3 contravariant(const IR3& position, double time) const override;
@@ -56,6 +56,7 @@ class equilibrium_vmec : public IR3field_c1{
 
   double R_0() const {return metric_->parser()->R_0();};
   double B_0() const {return metric_->parser()->B_0();};
+  int get_nfp() const {return metric_->parser()->nfp();};
   const metric_vmec* metric() const {return metric_;};
  private:
   const metric_vmec *metric_;
@@ -63,6 +64,13 @@ class equilibrium_vmec : public IR3field_c1{
   interpolator1d **bmnc_;
   interpolator1d **bsupumnc_;
   interpolator1d **bsupvmnc_;
+  IR3 cached_contravariant_position_;
+  IR3 cached_contravariant_value_;
+  IR3 cached_del_contravariant_position_;
+  dIR3 cached_del_contravariant_value_;
+  IR3 cached_magnitude_vmec_position_;
+  double cached_magnitude_vmec_value_;
+  const bool use_cache_ = true;
 };
 
 }// end namespace gyronimo.

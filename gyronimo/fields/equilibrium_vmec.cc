@@ -19,14 +19,21 @@
 
 #include <gyronimo/core/dblock.hh>
 #include <gyronimo/fields/equilibrium_vmec.hh>
+#include <numbers>
 
 namespace gyronimo{
 
 equilibrium_vmec::equilibrium_vmec(
-    const metric_vmec *g, const interpolator1d_factory *ifactory)
+    const metric_vmec *g, const interpolator1d_factory *ifactory, const bool cached = true)
     : IR3field_c1(abs(g->parser()->B_0()), 1.0, g), metric_(g),
       xm_nyq_(g->parser()->xm_nyq()), xn_nyq_(g->parser()->xn_nyq()),   
-      bmnc_(nullptr), bsupumnc_(nullptr), bsupvmnc_(nullptr) {
+      bmnc_(nullptr), bsupumnc_(nullptr), bsupvmnc_(nullptr),
+      cached_contravariant_position_({0.0, 0.0, 0.0}),
+      cached_contravariant_value_({0.0, 0.0, 0.0}),
+      cached_del_contravariant_position_({0.0, 0.0, 0.0}),
+      cached_del_contravariant_value_({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}),
+      cached_magnitude_vmec_position_({0.0, 0.0, 0.0}),
+      cached_magnitude_vmec_value_(0.0), use_cache_(cached) {
   const parser_vmec *p = metric_->parser();
   dblock_adapter s_range(p->radius());
   dblock_adapter s_half_range(p->radius_half());
@@ -38,7 +45,8 @@ equilibrium_vmec::equilibrium_vmec(
   #pragma omp parallel for
   for(size_t i=0; i<xm_nyq_.size(); i++) {
     std::slice s_cut (i, s_range.size(), xm_nyq_.size());
-    std::valarray<double> bsupumnc_i = (p->bsupumnc())[s_cut] / this->m_factor();
+    // note that theta_g = - theta_vmec -> B_theta_g = - B_theta_vmec 
+    std::valarray<double> bsupumnc_i = - (p->bsupumnc())[s_cut] / this->m_factor();
     bsupumnc_[i] = ifactory->interpolate_data( s_range, dblock_adapter(bsupumnc_i));
     std::valarray<double> bsupvmnc_i = (p->bsupvmnc())[s_cut] / this->m_factor();
     bsupvmnc_[i] = ifactory->interpolate_data( s_range, dblock_adapter(bsupvmnc_i));
@@ -55,60 +63,107 @@ equilibrium_vmec::~equilibrium_vmec() {
 }
 IR3 equilibrium_vmec::contravariant(const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
   double B_theta = 0.0, B_zeta = 0.0;
-  #pragma omp parallel for reduction(+: B_zeta, B_theta)
+  if (use_cache_) {
+    IR3 delta = (position - cached_contravariant_position_); delta = delta*delta;
+    double sdelta = delta[0]+delta[1]+delta[2];
+    if (sdelta < 1.0e-32) return cached_contravariant_value_; // criteria for equalness hardwired for now
+  };
+  if (s < 0.0) {
+    s = -s;
+    theta = theta + std::numbers::pi; // @todo, discuss clockwise versus anti-clockwise rotating of theta when mirroring @ s=0
+  }
+  else if (s > 1) s = 1;
+  // std::cerr << "in contravariant, s: " << s << ", theta: " << theta << ", zeta: " << zeta << "\n";
+  #pragma omp parallel for reduction(+: B_theta,  B_zeta)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
-    double cosmn = std::cos( m*theta - n*zeta );
-    B_zeta += (*bsupvmnc_[i])(s) * cosmn;
+    double cosmn = std::cos( m*theta + n*zeta );
     B_theta += (*bsupumnc_[i])(s) * cosmn; 
+    B_zeta += (*bsupvmnc_[i])(s) * cosmn;
   };
-  return {0.0,  B_zeta, B_theta};
+  IR3 value = {0.0, B_theta, B_zeta};
+  if (use_cache_) {
+    cached_contravariant_position_ = position;
+    cached_contravariant_value_ = value;
+  };
+  return value;
 }
 dIR3 equilibrium_vmec::del_contravariant(
     const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
+  if (use_cache_) {
+    IR3 delta = (position - cached_del_contravariant_position_); delta = delta*delta;
+    double sdelta = delta[0]+delta[1]+delta[2];
+    if (sdelta < 1.0e-32) return cached_del_contravariant_value_; // criteria for equalness hardwired for now
+  };
+  if (s < 0.0) {
+    s = -s;
+    theta = theta + std::numbers::pi; // @todo, discuss clockwise versus anti-clockwise rotating of theta when mirroring @ s=0
+  }
+  else if (s > 1) s = 1;
+  // std::cerr << "in del_contravariant, s: " << s << ", theta: " << theta << ", zeta: " << zeta << "\n";
   double B_theta = 0.0, B_zeta = 0.0;
   double dB_theta_ds = 0.0, dB_theta_dtheta = 0.0, dB_theta_dzeta = 0.0;
   double dB_zeta_ds = 0.0, dB_zeta_dtheta = 0.0, dB_zeta_dzeta = 0.0;
-  #pragma omp parallel for reduction(+: B_zeta, B_theta, dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta, dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta)
+  #pragma omp parallel for reduction(+: B_theta, B_zeta, dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta, dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
     double m = xm_nyq_[i]; double n = xn_nyq_[i];
-    double cosmn = std::cos( m*theta - n*zeta );
-    double sinmn = std::sin( m*theta - n*zeta );
+    double cosmn = std::cos( m*theta + n*zeta );
+    double sinmn = std::sin( m*theta + n*zeta );
     double bsupumnc_i = (*bsupumnc_[i])(s);
     double bsupvmnc_i = (*bsupvmnc_[i])(s);
     B_theta += bsupumnc_i * cosmn; 
     B_zeta += bsupvmnc_i * cosmn;
     dB_theta_ds += (*bsupumnc_[i]).derivative(s) * cosmn;
-    dB_theta_dtheta -= m * bsupumnc_i * sinmn;
-    dB_theta_dzeta += n * bsupumnc_i * sinmn;
+    dB_theta_dtheta -= m * bsupumnc_i * sinmn;  
+    dB_theta_dzeta -= n * bsupumnc_i * sinmn; 
     dB_zeta_ds += (*bsupvmnc_[i]).derivative(s) * cosmn;
     dB_zeta_dtheta -= m * bsupvmnc_i * sinmn;
-    dB_zeta_dzeta += n * bsupvmnc_i * sinmn;
+    dB_zeta_dzeta -= n * bsupvmnc_i * sinmn;
   };
-  return {
+  dIR3 value = {
       0.0, 0.0, 0.0, 
-	    dB_zeta_ds, dB_zeta_dzeta, dB_zeta_dtheta,
-      dB_theta_ds, dB_theta_dzeta, dB_theta_dtheta
+      dB_theta_ds, dB_theta_dtheta, dB_theta_dzeta,
+      dB_zeta_ds, dB_zeta_dtheta, dB_zeta_dzeta
   };
+  if (use_cache_) {
+    cached_del_contravariant_position_ = position;
+    cached_del_contravariant_value_ = value;
+  };
+  return value;
 }
 //@todo we can actually override the methods to calculate the covariant components of the field
 //@todo move this to magnitude after the half radius issue is sorted out
 double equilibrium_vmec::magnitude_vmec(
     const IR3& position, double time) const {
   double s = position[IR3::u];
-  double zeta = position[IR3::v];
-  double theta = position[IR3::w];
+  double theta = position[IR3::v];
+  double zeta = position[IR3::w];
+  // if (use_cache_) {
+  //   IR3 delta = (position - cached_magnitude_vmec_position_); delta = delta*delta;
+  //   double sdelta = delta[0]+delta[1]+delta[2];
+  //   if (sdelta < 1.0e-32) return cached_magnitude_vmec_value_; // criteria for equalness hardwired for now
+  // };
+  if (s < 0.0) {
+    s = -s;
+    theta = theta + std::numbers::pi; // @todo, discuss clockwise versus anti-clockwise rotating of theta when mirroring @ s=0
+  }
+  else if (s > 1) s = 1;
+  // std::cerr << "in magnitude_vmec, s: " << s << ", theta: " << theta << ", zeta: " << zeta << "\n";
   double Bnorm = 0.0;
   #pragma omp parallel for reduction(+: Bnorm)
   for (size_t i = 0; i < xm_nyq_.size(); i++) {  
-    Bnorm += (*bmnc_[i])(s) * std::cos( xm_nyq_[i] * theta - xn_nyq_[i] *zeta );
+    Bnorm += (*bmnc_[i])(s) * std::cos( xm_nyq_[i] * theta + xn_nyq_[i] * zeta );
   };
+  // if (use_cache_) {
+  //   cached_magnitude_vmec_position_ = position;
+  //   cached_magnitude_vmec_value_ = Bnorm;
+  // } ;
   return Bnorm;
 }
 
